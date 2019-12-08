@@ -250,12 +250,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		/**
 		 * 检查缓存中或者实例工厂中是否有对应的实例
 		 *这段代码的作用
-		 *因为在创建单例bean的时候回存在依赖注入的情况，而在创建依赖的时候为了避免循环依赖
+		 *因为在创建单例bean的时候会存在依赖注入的情况，而在创建依赖的时候为了避免循环依赖
 		 *spring创建bean的原则是不等bean创建完就会将创建bean的ObjectFactory提早曝光
 		 * 也就是将ObjectFactory加入到缓存中，一旦下个bean创建时候需要依赖上个bean则直接使用ObjectFactory
 		 */
 		//直接尝试从缓存获取或者 singletonFactories中的ObjectFactory 中获取（getObject()）
-		Object sharedInstance = getSingleton(beanName);
+		Object sharedInstance = getSingleton(beanName);//可以解决循环依赖的问题  这里获取的是未被populate的bean
 		if (sharedInstance != null && args == null) {
 			if (logger.isTraceEnabled()) {
 				if (isSingletonCurrentlyInCreation(beanName)) {
@@ -268,6 +268,21 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 			//返回对应的实例，有时候存在诸如BeanFatory的情况
 			// 并不是直接返回实体本身而是返回指定方法返回的实例
+			/**
+			 * 该代码逻辑用来处理Factorybean的实例获取
+			 *1.对FactoryBean的正确性的校验
+			 *2.对非FactoryBean不做任何处理
+			 *3.对bean进行转换
+			 *4.将Factory中解析bean的工作委托给getObjectFromFactoyBean
+			 * if (mbd != null) {
+			 * 		 mbd.isFactoryBean = true;
+			 * }else {
+			 *       如果mbd为空，则从缓存获取
+			 * 		object = getCachedObjectForFactoryBean(beanName);
+			 * }
+			 *FactoryBeanRegistrySupport  object = doGetObjectFromFactoryBean(factory, beanName);
+			 * 在DefaultSingletonBeanRegistry基础上增加了对FactoryBean的特殊处理功能。
+			 */
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
 
@@ -1852,6 +1867,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				mbd = getMergedLocalBeanDefinition(beanName);
 			}
 			boolean synthetic = (mbd != null && mbd.isSynthetic());
+			// !synthetic   shouldPostProcess是否需要进行后置处理
 			object = getObjectFromFactoryBean(factory, beanName, !synthetic);
 		}
 		return object;
