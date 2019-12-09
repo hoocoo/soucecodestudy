@@ -6,6 +6,7 @@
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/foundation/pom.xml" />
+        <option value="$PROJECT_DIR$/mybais-plus/pom.xml" />
       </list>
     </option>
   </component>

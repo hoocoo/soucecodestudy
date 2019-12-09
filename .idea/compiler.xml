@@ -12,6 +12,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="foundation" />
         <module name="mybatis" />
+        <module name="mybatis-plus" />
         <module name="mybatis-spring" />
         <module name="spring" />
         <module name="spring-aop" />
@@ -28,9 +29,6 @@
         <module name="spring-web" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="mybatis-plus" target="1.8" />
-    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
