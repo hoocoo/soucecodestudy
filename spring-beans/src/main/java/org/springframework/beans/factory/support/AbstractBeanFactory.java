@@ -255,7 +255,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		 * 也就是将ObjectFactory加入到缓存中，一旦下个bean创建时候需要依赖上个bean则直接使用ObjectFactory
 		 */
 		//直接尝试从缓存获取或者 singletonFactories中的ObjectFactory 中获取（getObject()）
-		Object sharedInstance = getSingleton(beanName);//可以解决循环依赖的问题  这里获取的是未被populate的bean
+		Object sharedInstance = getSingleton(beanName);//可以解决循环依赖的问题 这里获取的是未被populate的bean或者正在被populate的bean
 		if (sharedInstance != null && args == null) {
 			if (logger.isTraceEnabled()) {
 				if (isSingletonCurrentlyInCreation(beanName)) {
@@ -300,6 +300,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 
 			// Check if bean definition exists in this factory.
+			// 检查是否在父beanFactory中存在bean的定义
 			BeanFactory parentBeanFactory = getParentBeanFactory();
 			//如果beanDefinitionMap中也就是在所有已加载的类中不包括beanName则尝试从parentBeanFactory中检测
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
@@ -333,7 +334,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
-				//找出依赖
+				//Return the bean names that this bean depends on.
 				String[] dependsOn = mbd.getDependsOn();
 				//若存在依赖，则需要递归实例化依赖的bean
 				if (dependsOn != null) {

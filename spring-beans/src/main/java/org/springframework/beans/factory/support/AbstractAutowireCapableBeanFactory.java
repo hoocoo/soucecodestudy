@@ -612,7 +612,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}
 			//避免后期循环依赖，可以在bean初始化完成前将创建实例的ObjectFactory加入工厂
 			//对bean再一次依赖引用，主要应用SmartInstantiationAwareBeanPostProcessor
-			//其中我们熟知的AOP就是在这里将Advise动态织入bean中，热没有则直接返回bean不做任何处理
+			//其中我们熟知的AOP就是在这里将Advise动态织入bean中，若没有则直接返回bean不做任何处理
+			//exposedObject  提前曝光的bean
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
@@ -620,6 +621,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		Object exposedObject = bean;
 		try {
 			//属性赋值  在这里会做依赖注入 DI
+			/**
+			 *1.InstantiationAwareBeanPostProcessor 处理器的postProcessAfterInstantiation函数的应用
+			 *此函数可以控制程序是否继续进行属性填充。
+			 *2.根据注入类型,提取依赖的bean，并统一存入PropertyValues中。
+			 *3.应用InstantiationAwareBeanPostProcessor处理器的postProcessPropertyValues方法，对属性
+			 * 获取完毕填充前对属性的再次处理，典型的应用是RequiredAnnotationBeanPostProcessor类中对属性的验证
+			 *4.将所有PropertyValues中的属性填充至BeanWrapper
+			 */
 			populateBean(beanName, mbd, instanceWrapper);
 			//实例化bean
 			/**
@@ -994,6 +1003,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	}
 
 	/**
+	 * 获取早期解决循环依赖的一个bean的引用
 	 * Obtain a reference for early access to the specified bean,
 	 * typically for the purpose of resolving a circular reference.
 	 * @param beanName the name of the bean (for error handling purposes)
@@ -1422,6 +1432,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	}
 
 	/**
+	 * 属性填充
 	 * Populate the bean instance in the given BeanWrapper with the property values
 	 * from the bean definition.
 	 * @param beanName the name of the bean
@@ -1444,12 +1455,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Give any InstantiationAwareBeanPostProcessors the opportunity to modify the
 		// state of the bean before properties are set. This can be used, for example,
 		// to support styles of field injection.
+		//给InstantiationAwareBeanPostProcessors后置处理器最后一次机会在属性设置前来改变bean
 		boolean continueWithPropertyPopulation = true;
 
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
 					InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
+					//返回值为是否继续填充bean
 					if (!ibp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) {
 						continueWithPropertyPopulation = false;
 						break;
@@ -1468,18 +1481,21 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (resolvedAutowireMode == AUTOWIRE_BY_NAME || resolvedAutowireMode == AUTOWIRE_BY_TYPE) {
 			MutablePropertyValues newPvs = new MutablePropertyValues(pvs);
 			// Add property values based on autowire by name if applicable.
+			//根据名称自动注入
 			if (resolvedAutowireMode == AUTOWIRE_BY_NAME) {
 				//  调用autowireByName 方法  依赖注入bean  递归调用 getBean()-> doCreateBean()
 				autowireByName(beanName, mbd, bw, newPvs);
 			}
 			// Add property values based on autowire by type if applicable.
+			//根据类型自动注入
 			if (resolvedAutowireMode == AUTOWIRE_BY_TYPE) {
 				autowireByType(beanName, mbd, bw, newPvs);
 			}
 			pvs = newPvs;
 		}
-
+		//后处理器已经初始化
 		boolean hasInstAwareBpps = hasInstantiationAwareBeanPostProcessors();
+		//需要依赖检查
 		boolean needsDepCheck = (mbd.getDependencyCheck() != AbstractBeanDefinition.DEPENDENCY_CHECK_NONE);
 
 		PropertyDescriptor[] filteredPds = null;
@@ -1495,6 +1511,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 						if (filteredPds == null) {
 							filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);
 						}
+						//对所有需要依赖检查的属性进行后处理
 						pvsToUse = ibp.postProcessPropertyValues(pvs, filteredPds, bw.getWrappedInstance(), beanName);
 						if (pvsToUse == null) {
 							return;
@@ -1508,10 +1525,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			if (filteredPds == null) {
 				filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);
 			}
+			//检查依赖 depends-on属性  3.0已经启用该属性
 			checkDependencies(beanName, mbd, filteredPds, pvs);
 		}
 
 		if (pvs != null) {
+			//将属性应用到bean中
 			applyPropertyValues(beanName, mbd, bw, pvs);
 		}
 	}
@@ -1868,6 +1887,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			 * 			return null;
 			 * }, getAccessControlContext());
 			 * 调用实现InitializingBean接口的afterPropertiesSet（）方法的处理
+			 * 如果存在配置的init-method（）  则继续调用。
+			 * 存在先后关系
+			 *
 			 */
 			invokeInitMethods(beanName, wrappedBean, mbd);
 		}
