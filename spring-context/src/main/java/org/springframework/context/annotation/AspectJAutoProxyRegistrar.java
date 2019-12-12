@@ -41,7 +41,11 @@ class AspectJAutoProxyRegistrar implements ImportBeanDefinitionRegistrar {
 	@Override
 	public void registerBeanDefinitions(
 			AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
-
+		//SmartInstantiationAwareBeanPostProcessor
+		//改行代码实际上是生成 AnnotationAwareAspectJAutoProxyCreator类型 的RootBeanDefinition 到 beanFactory的beanDefinitionMap中
+		//在创建BPP的时候则会注册
+		//在生成单实例bean的时候执行后置处理时 存在实现了SmartInstantiationAwareBeanPostProcessor接口的BPP则会拦截处理
+		//名称org.springframework.aop.config.internalAutoProxyCreator
 		AopConfigUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(registry);
 
 		AnnotationAttributes enableAspectJAutoProxy =
