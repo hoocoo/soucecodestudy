@@ -17,6 +17,7 @@
 package org.springframework.context.annotation;
 
 import org.springframework.aop.config.AopConfigUtils;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
@@ -42,11 +43,11 @@ class AspectJAutoProxyRegistrar implements ImportBeanDefinitionRegistrar {
 	public void registerBeanDefinitions(
 			AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
 		//SmartInstantiationAwareBeanPostProcessor
-		//改行代码实际上是生成 AnnotationAwareAspectJAutoProxyCreator类型 的RootBeanDefinition 到 beanFactory的beanDefinitionMap中
+		//该行代码实际上是生成 AnnotationAwareAspectJAutoProxyCreator类型 的RootBeanDefinition 到 beanFactory的beanDefinitionMap中
 		//在创建BPP的时候则会注册
 		//在生成单实例bean的时候执行后置处理时 存在实现了SmartInstantiationAwareBeanPostProcessor接口的BPP则会拦截处理
 		//名称org.springframework.aop.config.internalAutoProxyCreator
-		AopConfigUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(registry);
+		BeanDefinition definition = AopConfigUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(registry);
 
 		AnnotationAttributes enableAspectJAutoProxy =
 				AnnotationConfigUtils.attributesFor(importingClassMetadata, EnableAspectJAutoProxy.class);

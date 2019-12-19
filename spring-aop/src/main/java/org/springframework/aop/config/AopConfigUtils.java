@@ -126,6 +126,7 @@ public abstract class AopConfigUtils {
 				int currentPriority = findPriorityForClass(apcDefinition.getBeanClassName());
 				int requiredPriority = findPriorityForClass(cls);
 				if (currentPriority < requiredPriority) {
+					//修改BeanDefinition对应的className属性，方便注册另外的代理创建器
 					apcDefinition.setBeanClassName(cls.getName());
 				}
 			}
